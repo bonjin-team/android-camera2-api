@@ -6,7 +6,6 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.webkit.JavascriptInterface
 import android.webkit.WebViewClient
-import android.widget.Toast
 import kr.co.bonjin.activity.CameraActivity
 import kr.co.bonjin.databinding.ActivityMainBinding
 
@@ -35,8 +34,6 @@ class MainActivity : AppCompatActivity() {
 class WebViewJavascriptInterface(private val mContext: Context) {
     @JavascriptInterface
     fun showCamera() {
-        Toast.makeText(mContext, "showCamera", Toast.LENGTH_SHORT).show()
-
         val intent = Intent(mContext, CameraActivity::class.java)
         mContext.startActivity(intent)
     }
