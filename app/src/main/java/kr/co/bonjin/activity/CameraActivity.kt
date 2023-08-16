@@ -20,9 +20,13 @@ import android.view.TextureView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.bumptech.glide.Glide
 import kr.co.bonjin.databinding.ActivityCameraBinding
 import java.io.File
 import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class CameraActivity: AppCompatActivity()  {
     lateinit var binding: ActivityCameraBinding
@@ -89,13 +93,15 @@ class CameraActivity: AppCompatActivity()  {
 
         imageReader = ImageReader.newInstance(1080, 1920, ImageFormat.JPEG, 1)
         imageReader.setOnImageAvailableListener({
+            val now = Date()
+            val time: String = SimpleDateFormat("yyyyMMddHHmmss", Locale.ENGLISH).format(now)
 
             var image = it.acquireLatestImage()
             var buffer = image!!.planes.first().buffer
             var bytes = ByteArray(buffer.remaining())
             buffer.get(bytes)
 
-            var file = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "image.jpeg")
+            var file = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "$time.jpeg")
             var outputStream = FileOutputStream(file)
             outputStream.write(bytes)
 
@@ -103,6 +109,16 @@ class CameraActivity: AppCompatActivity()  {
             image.close()
 
             Toast.makeText(this@CameraActivity, "이미지 캡쳐", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@CameraActivity, file.toString(), Toast.LENGTH_SHORT).show()
+
+            cameraCaptureSession.stopRepeating()
+
+            runOnUiThread {
+                Glide.with(this)
+                    .load(file)
+                    .into(binding.imageView)
+            }
+
         }, handler)
     }
 
@@ -128,7 +144,6 @@ class CameraActivity: AppCompatActivity()  {
         cameraManager.openCamera(cameraManager.cameraIdList.first(), object: CameraDevice.StateCallback() {
             override fun onOpened(camera: CameraDevice) {
                 cameraDevice = camera
-
                 var surface = Surface(binding.textureView.surfaceTexture)
                 captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
                 captureRequestBuilder.addTarget(surface)
