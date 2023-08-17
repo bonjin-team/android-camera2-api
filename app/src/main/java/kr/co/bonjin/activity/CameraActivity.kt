@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCaptureSession
@@ -63,12 +64,11 @@ class CameraActivity: AppCompatActivity()  {
             if (result.resultCode == 1001) {
                 val intent = result.data
                 // crop 결과 Image
-                var file: File? = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    intent?.getSerializableExtra("imageData", File::class.java)
-                } else {
-                    intent?.getSerializableExtra("imageData") as File
-                }
-
+                var imageData: String? = intent?.getStringExtra("imageData")
+                val newIntent = Intent(this@CameraActivity, CameraActivity::class.java)
+                newIntent.putExtra("imageData", imageData)
+                setResult(1001, newIntent)
+                finish()
             }
         }
 
