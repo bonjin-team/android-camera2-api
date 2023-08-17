@@ -25,10 +25,10 @@ class CameraResultActivity: AppCompatActivity(){
     }
 
     private fun init() {
-        var file: File? = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getSerializableExtra("imageData", File::class.java)
-        } else {
-            intent.getSerializableExtra("imageData") as File
+        var imageFilePath: String? = intent.getStringExtra("imageDataPath")
+        imageFilePath?.let {
+            val bitmap = FileUtil.rotateBitmapIfNeeded(imageFilePath)
+            binding.cropImageView.setImageBitmap(bitmap)
         }
 
         binding.closeButton.setOnClickListener {
@@ -50,10 +50,6 @@ class CameraResultActivity: AppCompatActivity(){
             }
         }
 
-        val options = BitmapFactory.Options()
-        options.inPreferredConfig = Bitmap.Config.ARGB_8888
 
-        val decodeStream = BitmapFactory.decodeStream(FileInputStream(file), null, options)
-        binding.cropImageView.setImageBitmap(decodeStream)
     }
 }

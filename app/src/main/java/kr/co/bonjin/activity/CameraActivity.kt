@@ -21,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import kr.co.bonjin.MainActivity
 import kr.co.bonjin.databinding.ActivityCameraBinding
+import kr.co.bonjin.utils.FileUtil
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -113,19 +114,9 @@ class CameraActivity: AppCompatActivity()  {
             var bytes = ByteArray(buffer.remaining())
             buffer.get(bytes)
 
-            val encoded = Base64.getEncoder().encode(bytes)
-            // 세로로 잘 나옴
-            val encodedBase64 = String(encoded)
-
-            var file = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "$time.jpeg")
-            var outputStream = FileOutputStream(file)
-            outputStream.write(bytes)
-
-            outputStream.close()
-            image.close()
-
+            val file = FileUtil.saveByteArrayToFileInTempDir(bytes, "jpg")
             var intent = Intent(this@CameraActivity, CameraResultActivity::class.java)
-            intent.putExtra("imageData", file);
+            intent.putExtra("imageDataPath", file.absolutePath);
             activityResultLauncher.launch(intent)
         }, handler)
     }
