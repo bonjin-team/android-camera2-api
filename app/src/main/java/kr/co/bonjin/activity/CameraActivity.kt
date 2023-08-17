@@ -5,7 +5,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.*
@@ -14,6 +13,7 @@ import android.os.*
 import android.util.SparseIntArray
 import android.view.Surface
 import android.view.TextureView
+import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,24 +22,18 @@ import androidx.core.content.ContextCompat
 import kr.co.bonjin.MainActivity
 import kr.co.bonjin.databinding.ActivityCameraBinding
 import kr.co.bonjin.utils.FileUtil
-import java.io.File
-import java.io.FileOutputStream
-import java.text.SimpleDateFormat
-import java.util.Base64
-import java.util.Date
-import java.util.Locale
+
 
 class CameraActivity: AppCompatActivity()  {
     lateinit var binding: ActivityCameraBinding
-    lateinit var cameraManager: CameraManager
+    private lateinit var cameraManager: CameraManager
     lateinit var cameraCaptureSession: CameraCaptureSession
     lateinit var cameraDevice: CameraDevice
-    lateinit var captureRequest: CaptureRequest
     lateinit var captureRequestBuilder: CaptureRequest.Builder
     lateinit var handler: Handler
-    lateinit var handlerThread: HandlerThread
+    private lateinit var handlerThread: HandlerThread
     lateinit var imageReader: ImageReader
-    lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
+    private lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,10 +55,11 @@ class CameraActivity: AppCompatActivity()  {
             takePicture()
         }
 
+        //TODO: onCreate or onStart에서 사용!?
         activityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == 1001) {
                 val intent = result.data
-                var imageFilePath: String? = intent?.getStringExtra("imageFilePath")
+                val imageFilePath: String? = intent?.getStringExtra("imageFilePath")
                 val newIntent = Intent(this@CameraActivity, MainActivity::class.java)
                 newIntent.putExtra("imageFilePath", imageFilePath)
                 setResult(1001, newIntent)
@@ -85,6 +80,7 @@ class CameraActivity: AppCompatActivity()  {
                 width: Int,
                 height: Int
             ) {
+                adjustTextureViewSize(width,height)
                 openCamera()
             }
 
@@ -104,19 +100,19 @@ class CameraActivity: AppCompatActivity()  {
         }
 
 
-        imageReader = ImageReader.newInstance(1080, 1920, ImageFormat.JPEG, 1)
+        imageReader = ImageReader.newInstance(1080, 1920, ImageFormat.JPEG, 1) //캡쳐 후 크기?
         imageReader.setOnImageAvailableListener({
-            val now = Date()
-            val time: String = SimpleDateFormat("yyyyMMddHHmmss", Locale.ENGLISH).format(now)
 
-            var image = it.acquireLatestImage()
-            var buffer = image!!.planes.first().buffer
-            var bytes = ByteArray(buffer.remaining())
+            val image = it.acquireLatestImage()
+            val buffer = image!!.planes.first().buffer
+            val bytes = ByteArray(buffer.remaining())
             buffer.get(bytes)
 
+            image.close()
+
             val file = FileUtil.saveByteArrayToFileInTempDir(bytes, "jpg")
-            var intent = Intent(this@CameraActivity, CameraResultActivity::class.java)
-            intent.putExtra("imageDataPath", file.absolutePath);
+            val intent = Intent(this@CameraActivity, CameraResultActivity::class.java)
+            intent.putExtra("imageDataPath", file.absolutePath)
             activityResultLauncher.launch(intent)
         }, handler)
     }
@@ -143,7 +139,7 @@ class CameraActivity: AppCompatActivity()  {
         cameraManager.openCamera(cameraManager.cameraIdList.first(), object: CameraDevice.StateCallback() {
             override fun onOpened(camera: CameraDevice) {
                 cameraDevice = camera
-                var surface = Surface(binding.textureView.surfaceTexture)
+                val surface = Surface(binding.textureView.surfaceTexture)
                 captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
                 captureRequestBuilder.addTarget(surface)
 
@@ -166,6 +162,24 @@ class CameraActivity: AppCompatActivity()  {
             }
 
         }, handler)
+    }
+
+    /**
+     * 촬영모드 화면 비율 설정
+     */
+    private fun adjustTextureViewSize(viewWidth: Int, viewHeight: Int) {
+        // 원하는 화면 비율 설정
+        var desiredWidth = viewWidth
+        var desiredHeight = viewWidth * 1 / 1 // 1:1 비율
+        if (desiredHeight > viewHeight) {
+            // 뷰의 높이에 맞추기 위해 너비 조정
+            desiredWidth = viewHeight * 1 / 1
+            desiredHeight = viewHeight
+        }
+        val params: ViewGroup.LayoutParams = binding.textureView.layoutParams
+        params.width = desiredWidth
+        params.height = desiredHeight
+        binding.textureView.layoutParams = params
     }
 
     private fun takePicture() {
@@ -205,7 +219,7 @@ class CameraActivity: AppCompatActivity()  {
         } else {
             Toast.makeText(this,
                 "권한을 허용해주세요",
-                Toast.LENGTH_LONG).show();
+                Toast.LENGTH_LONG).show()
             finish()
         }
     }
