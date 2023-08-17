@@ -23,6 +23,7 @@ import kr.co.bonjin.databinding.ActivityCameraBinding
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
+import java.util.Base64
 import java.util.Date
 import java.util.Locale
 
@@ -111,6 +112,10 @@ class CameraActivity: AppCompatActivity()  {
             var buffer = image!!.planes.first().buffer
             var bytes = ByteArray(buffer.remaining())
             buffer.get(bytes)
+
+            val encoded = Base64.getEncoder().encode(bytes)
+            // 세로로 잘 나옴
+            val encodedBase64 = String(encoded)
 
             var file = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "$time.jpeg")
             var outputStream = FileOutputStream(file)
