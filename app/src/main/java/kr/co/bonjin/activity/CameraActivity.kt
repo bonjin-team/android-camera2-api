@@ -3,6 +3,7 @@ package kr.co.bonjin.activity
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
@@ -11,16 +12,14 @@ import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
 import android.media.ImageReader
-import android.os.Bundle
-import android.os.Environment
-import android.os.Handler
-import android.os.HandlerThread
+import android.os.*
 import android.view.Surface
 import android.view.TextureView
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.bumptech.glide.Glide
 import kr.co.bonjin.databinding.ActivityCameraBinding
 import java.io.File
 import java.io.FileOutputStream
@@ -38,6 +37,7 @@ class CameraActivity: AppCompatActivity()  {
     lateinit var handler: Handler
     lateinit var handlerThread: HandlerThread
     lateinit var imageReader: ImageReader
+    lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +59,18 @@ class CameraActivity: AppCompatActivity()  {
             takePicture()
         }
 
+        activityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == 1001) {
+                val intent = result.data
+                // crop 결과 Image
+                var file: File? = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent?.getSerializableExtra("imageData", File::class.java)
+                } else {
+                    intent?.getSerializableExtra("imageData") as File
+                }
+
+            }
+        }
 
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
         handlerThread = HandlerThread("videoThread")
@@ -91,6 +103,7 @@ class CameraActivity: AppCompatActivity()  {
             }
         }
 
+
         imageReader = ImageReader.newInstance(1080, 1920, ImageFormat.JPEG, 1)
         imageReader.setOnImageAvailableListener({
             val now = Date()
@@ -108,17 +121,9 @@ class CameraActivity: AppCompatActivity()  {
             outputStream.close()
             image.close()
 
-            Toast.makeText(this@CameraActivity, "이미지 캡쳐", Toast.LENGTH_SHORT).show()
-            Toast.makeText(this@CameraActivity, file.toString(), Toast.LENGTH_SHORT).show()
-
-            cameraCaptureSession.stopRepeating()
-
-            runOnUiThread {
-                Glide.with(this)
-                    .load(file)
-                    .into(binding.imageView)
-            }
-
+            var intent = Intent(this@CameraActivity, CameraResultActivity::class.java)
+            intent.putExtra("imageData", file);
+            activityResultLauncher.launch(intent)
         }, handler)
     }
 
