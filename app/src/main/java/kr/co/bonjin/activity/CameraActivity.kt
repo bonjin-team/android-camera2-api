@@ -19,6 +19,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import kr.co.bonjin.MainActivity
 import kr.co.bonjin.databinding.ActivityCameraBinding
 import java.io.File
 import java.io.FileOutputStream
@@ -62,10 +63,9 @@ class CameraActivity: AppCompatActivity()  {
         activityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == 1001) {
                 val intent = result.data
-                // crop 결과 Image
-                var imageData: String? = intent?.getStringExtra("imageData")
-                val newIntent = Intent(this@CameraActivity, CameraActivity::class.java)
-                newIntent.putExtra("imageData", imageData)
+                var imageFilePath: String? = intent?.getStringExtra("imageFilePath")
+                val newIntent = Intent(this@CameraActivity, MainActivity::class.java)
+                newIntent.putExtra("imageFilePath", imageFilePath)
                 setResult(1001, newIntent)
                 finish()
             }

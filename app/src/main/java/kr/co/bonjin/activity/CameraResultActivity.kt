@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import kr.co.bonjin.databinding.ActivityCameraResultBinding
+import kr.co.bonjin.utils.FileUtil
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
@@ -38,13 +39,15 @@ class CameraResultActivity: AppCompatActivity(){
             val cropped: Bitmap? = binding.cropImageView.getCroppedImage()
             val byteOutput = ByteArrayOutputStream()
             cropped?.compress(Bitmap.CompressFormat.JPEG, 70, byteOutput)
-            val bytes = byteOutput.toByteArray()
-            val base64String = Base64.getEncoder().encodeToString(bytes)
 
-            val intent = Intent(this@CameraResultActivity, CameraActivity::class.java)
-            intent.putExtra("imageData", base64String)
-            setResult(1001, intent)
-            finish()
+            cropped?.let {
+                val file = FileUtil.saveBitmapToFile(cropped, this.cacheDir, "jpg")
+
+                val intent = Intent(this@CameraResultActivity, CameraActivity::class.java)
+                intent.putExtra("imageFilePath", file.absolutePath)
+                setResult(1001, intent)
+                finish()
+            }
         }
 
         val options = BitmapFactory.Options()
