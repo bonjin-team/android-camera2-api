@@ -8,12 +8,10 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
-import android.hardware.camera2.CameraCaptureSession
-import android.hardware.camera2.CameraDevice
-import android.hardware.camera2.CameraManager
-import android.hardware.camera2.CaptureRequest
+import android.hardware.camera2.*
 import android.media.ImageReader
 import android.os.*
+import android.util.SparseIntArray
 import android.view.Surface
 import android.view.TextureView
 import android.widget.Toast
@@ -177,7 +175,26 @@ class CameraActivity: AppCompatActivity()  {
     private fun takePicture() {
         captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
         captureRequestBuilder.addTarget(imageReader.surface)
+        val rotation = windowManager.defaultDisplay.rotation
+        captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, getOrientation(rotation))
+
         cameraCaptureSession.capture(captureRequestBuilder.build(), null, null)
+    }
+
+    private fun getOrientation(rotation: Int): Int {
+        val sensorOrientation = cameraManager.getCameraCharacteristics(cameraManager.cameraIdList.first())
+            .get(CameraCharacteristics.SENSOR_ORIENTATION)
+        if (sensorOrientation != null) {
+            return (sensorOrientation + ORIENTATIONS.get(rotation) + 270) % 360
+        }
+        return 0
+    }
+
+    private val ORIENTATIONS = SparseIntArray().apply {
+        append(Surface.ROTATION_0, 90)
+        append(Surface.ROTATION_90, 0)
+        append(Surface.ROTATION_180, 270)
+        append(Surface.ROTATION_270, 180)
     }
 
     override fun onRequestPermissionsResult(
