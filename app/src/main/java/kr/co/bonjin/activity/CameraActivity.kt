@@ -18,6 +18,7 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import kr.co.bonjin.MainActivity
 import kr.co.bonjin.databinding.ActivityCameraBinding
@@ -40,11 +41,10 @@ class CameraActivity: AppCompatActivity()  {
         binding = ActivityCameraBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        performPermission()
+        init()
     }
 
     /**
-     * 실행 권한이 정상적으로 허용되면 초기화
      */
     private fun init() {
         binding.closeButton.setOnClickListener {
@@ -55,7 +55,6 @@ class CameraActivity: AppCompatActivity()  {
             takePicture()
         }
 
-        //TODO: onCreate or onStart에서 사용!?
         activityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == 1001) {
                 val intent = result.data
@@ -67,6 +66,12 @@ class CameraActivity: AppCompatActivity()  {
             }
         }
 
+        initCamera()
+
+        performPermission()
+    }
+
+    private fun initCamera() {
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
         handlerThread = HandlerThread("videoThread")
         handlerThread.start()
@@ -99,7 +104,6 @@ class CameraActivity: AppCompatActivity()  {
             }
         }
 
-
         imageReader = ImageReader.newInstance(1080, 1920, ImageFormat.JPEG, 1) //캡쳐 후 크기?
         imageReader.setOnImageAvailableListener({
 
@@ -127,15 +131,21 @@ class CameraActivity: AppCompatActivity()  {
                 arrayOf(Manifest.permission.CAMERA), 1
             )
         } else {
-            init()
+            initCamera()
         }
     }
 
     /**
      * CameraManager Init
      */
-    @SuppressLint("MissingPermission")
     private fun openCamera() {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.CAMERA
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
         cameraManager.openCamera(cameraManager.cameraIdList.first(), object: CameraDevice.StateCallback() {
             override fun onOpened(camera: CameraDevice) {
                 cameraDevice = camera
@@ -215,7 +225,7 @@ class CameraActivity: AppCompatActivity()  {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if(requestCode == 1) {
-            init()
+            openCamera()
         } else {
             Toast.makeText(this,
                 "권한을 허용해주세요",
